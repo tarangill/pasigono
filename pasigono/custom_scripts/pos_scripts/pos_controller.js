@@ -490,7 +490,7 @@ raw_print(frm) {
                         _lang: frappe.boot.lang || "en"
                     },
                     callback: function(res) {
-												console.log("jatt 2: ", res.message);
+												console.log("jatt 23: ", res.message);
                         if (!res.message?.raw_commands) {
                             frappe.msgprint("No raw print commands returned.");
                             return;
@@ -514,8 +514,8 @@ raw_print(frm) {
                             // ✅ QZ Tray expects this EXACT format for raw ESC/POS
                             const printData = [{
                                 type: 'raw',
-                                data: [rawCommands],
-                                language: 'ESC/POS'
+                                data: rawCommands,
+																format: "command"
                             }];
 
                             qz.print(config, printData).catch(function(e) {
