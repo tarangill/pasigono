@@ -482,55 +482,53 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 								console.log("jatt 1: ", r.message);
                 const print_format = r.message?.print_format || "POS Invoice - Raw 2";
 
-                // Serialize the full document (same as POS does)
-                const form_data = new FormData();
-                form_data.append("doc", JSON.stringify(frm.doc));
-                form_data.append("print_format", print_format);
-                form_data.append("_lang", frappe.boot.lang || "en");
-
-                // Use direct jQuery/Fetch style POST to match real Frappe behavior
-                fetch("/api/method/frappe.www.printview.get_rendered_raw_commands", {
-                    method: "POST",
-                    body: form_data
-                })
-                .then(r => r.json())
-                .then(r => {
-										console.log("jatt 2: ", r.message);
-                    if (!r.message) {
-                        frappe.msgprint("No printable data returned.");
-                        return;
-                    }
-
-                    // Get printer list from QZ Tray
-                    frappe.ui.form.qz_get_printer_list().then(function(printers) {
-                        let config;
-                        printers.forEach(function(printer) {
-                            if (printer === window.raw_printer) {
-                                config = qz.configs.create(printer);
-                            }
-                        });
-
-                        if (!config) {
-                            frappe.msgprint("Selected printer not found: " + window.raw_printer);
+                // Use frappe.call with POST type - handles CSRF automatically
+                frappe.call({
+                    method: "frappe.www.printview.get_rendered_raw_commands",
+                    type: "POST",
+                    args: {
+                        doc: JSON.stringify(frm.doc),  // Stringify like the original POST
+                        print_format: print_format,
+                        _lang: frappe.boot.lang || "en"
+                    },
+                    callback: function(res) {
+												console.log("jatt 2: ", r.message);
+                        if (!res.message) {
+                            frappe.msgprint("No printable data returned.");
                             return;
                         }
 
-                        // Data from Frappe will already be raw ESC/POS commands
-                        const data = Array.isArray(r.message) ? r.message : [r.message];
-                        qz.print(config, data).catch(function(e) {
-                            console.error("QZ Print Error:", e);
-                            frappe.msgprint("Printing failed: " + e.message);
+                        // QZ Tray printing
+                        frappe.ui.form.qz_get_printer_list().then(function(printers) {
+                            let config;
+                            printers.forEach(function(printer) {
+                                if (printer === window.raw_printer) {
+                                    config = qz.configs.create(printer);
+                                }
+                            });
+
+                            if (!config) {
+                                frappe.msgprint("Printer not found: " + window.raw_printer);
+                                return;
+                            }
+
+                            const data = Array.isArray(res.message) ? res.message : [res.message];
+                            qz.print(config, data).catch(function(e) {
+                                console.error("Print error:", e);
+                                frappe.msgprint("Printing failed: " + e.message);
+                            });
                         });
-                    });
-                })
-                .catch(err => {
-                    console.error(err);
-                    frappe.msgprint("Failed to load rendered print format.");
+                    },
+                    error: function(err) {
+                        console.error("API error:", err);
+                        frappe.msgprint("Failed to render print format.");
+                    }
                 });
             }
         });
     }
 }
+
 
 
 /*
