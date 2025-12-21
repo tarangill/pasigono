@@ -468,9 +468,8 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 		}
 	}
 
-	raw_print(frm) {
+raw_print(frm) {
     if (window.enable_raw_print == 1 && window.raw_printer) {
-        // Get print format from POS Profile
         frappe.call({
             method: "frappe.client.get_value",
             args: {
@@ -482,23 +481,23 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 								console.log("jatt 1: ", r.message);
                 const print_format = r.message?.print_format || "POS Invoice - Raw 2";
 
-                // Use frappe.call with POST type - handles CSRF automatically
                 frappe.call({
                     method: "frappe.www.printview.get_rendered_raw_commands",
                     type: "POST",
                     args: {
-                        doc: JSON.stringify(frm.doc),  // Stringify like the original POST
+                        doc: JSON.stringify(frm.doc),
                         print_format: print_format,
                         _lang: frappe.boot.lang || "en"
                     },
                     callback: function(res) {
-												console.log("jatt 2: ", r.message);
-                        if (!res.message) {
-                            frappe.msgprint("No printable data returned.");
+												console.log("jatt 2: ", res.message);
+                        if (!res.message?.raw_commands) {
+                            frappe.msgprint("No raw print commands returned.");
                             return;
                         }
 
-                        // QZ Tray printing
+                        const rawCommands = res.message.raw_commands;
+
                         frappe.ui.form.qz_get_printer_list().then(function(printers) {
                             let config;
                             printers.forEach(function(printer) {
@@ -512,8 +511,14 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
                                 return;
                             }
 
-                            const data = Array.isArray(res.message) ? res.message : [res.message];
-                            qz.print(config, data).catch(function(e) {
+                            // ✅ QZ Tray expects this EXACT format for raw ESC/POS
+                            const printData = [{
+                                type: 'raw',
+                                data: [rawCommands],
+                                language: 'ESC/POS'
+                            }];
+
+                            qz.print(config, printData).catch(function(e) {
                                 console.error("Print error:", e);
                                 frappe.msgprint("Printing failed: " + e.message);
                             });
@@ -528,6 +533,7 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
         });
     }
 }
+
 
 
 
