@@ -354,10 +354,10 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 								this.toggle_components(false);
 								this.order_summary.toggle_component(true);
 								this.order_summary.load_summary_of(this.frm.doc, true);
-								frappe.show_alert({
-									indicator: 'green',
-									message: __('POS invoice {0} created succesfully', [r.doc.name])
-								});
+								// frappe.show_alert({
+								// 	indicator: 'green',
+								// 	message: __('POS invoice {0} created succesfully', [r.doc.name])
+								// });
 						});
 					}
 					else{
