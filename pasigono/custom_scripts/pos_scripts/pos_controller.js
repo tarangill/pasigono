@@ -113,24 +113,29 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 								});	
 							});
 						}
-						var d = new frappe.ui.Dialog({
-							'fields': [
-								{'fieldname': 'printer', 'fieldtype': 'Select', 'reqd': 1, 'label': "Printer"}
-							],
-							primary_action: function(){
-								window.raw_printer = d.get_values().printer;
-								d.hide();
-							},
-							secondary_action: function(){
-								d.hide();
-							},
-							secondary_action_label: "Cancel",
-							'title': 'Select printer for Raw Printing'
-						});
-						frappe.ui.form.qz_get_printer_list().then((data) => {
-							d.set_df_property('printer', 'options', data);
-							d.show();
-						});	
+						if(localStorage.raw_printer) {
+							window.raw_printer = localStorage.raw_printer;
+						} else {
+							var d = new frappe.ui.Dialog({
+								'fields': [
+									{'fieldname': 'printer', 'fieldtype': 'Select', 'reqd': 1, 'label': "Printer"}
+								],
+								primary_action: function(){
+									window.raw_printer = d.get_values().printer;
+									localStorage.raw_printer = window.raw_printer;
+									d.hide();
+								},
+								secondary_action: function(){
+									d.hide();
+								},
+								secondary_action_label: "Cancel",
+								'title': 'Select printer for Raw Printing'
+							});
+							frappe.ui.form.qz_get_printer_list().then((data) => {
+								d.set_df_property('printer', 'options', data);
+								d.show();
+							});	
+						}
 					});
 				}
 				window.automatically_print = profile.automatically_print;
@@ -508,6 +513,7 @@ raw_print(frm) {
 
                             if (!config) {
                                 frappe.msgprint("Printer not found: " + window.raw_printer);
+																window.raw_printer = null;
                                 return;
                             }
 
