@@ -1,0 +1,17 @@
+{
+  "doctype": "DocType",
+  "name": "Helcim Transaction",
+  "module": "Pasigono",
+  "custom": 0,
+  "fields": [
+    { "fieldname": "invoice", "fieldtype": "Link", "options": "POS Invoice", "reqd": 1 },
+    { "fieldname": "status", "fieldtype": "Select", "options": "Pending\nApproved\nDeclined\nRefunded\nChargeback" },
+    { "fieldname": "amount", "fieldtype": "Currency" },
+    { "fieldname": "device_id", "fieldtype": "Data" },
+    { "fieldname": "helcim_reference", "fieldtype": "Data", "unique": 1 },
+    { "fieldname": "card_last4", "fieldtype": "Data" }
+  ],
+  "permissions": [
+    { "role": "System Manager", "read": 1, "write": 1 }
+  ]
+}

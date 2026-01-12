@@ -4,3 +4,4 @@
 *.swp
 tags
 pasigono/docs/current
+*/public/dist

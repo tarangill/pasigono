@@ -1,0 +1,15 @@
+{
+  "doctype": "DocType",
+  "name": "Helcim Settings",
+  "issingle": 1,
+  "module": "Pasigono",
+  "fields": [
+    { "fieldname": "api_key", "label": "API Key", "fieldtype": "Password", "reqd": 1 },
+    { "fieldname": "api_url", "label": "API URL", "fieldtype": "Data", "default": "https://api.helcim.com/v2" },
+    { "fieldname": "mode_of_payment", "label": "Helcim Mode of Payment", "fieldtype": "Link", "options": "Mode of Payment" },
+    { "fieldname": "loss_account", "label": "Loss Account", "fieldtype": "Link", "options": "Account" }
+  ],
+  "permissions": [
+    { "role": "System Manager", "read": 1, "write": 1 }
+  ]
+}

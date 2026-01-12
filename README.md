@@ -5,6 +5,7 @@ This custom app adds the following functionality to ERPNext's Point of Sale:
 - Weigh scale integration to get weights for items
 - Stripe Terminal integration to accept card payments within the POS
 - Raw printing via QZ Tray to bypass the print preview screen and print directly to printers with ESC/POS commands, as well as controlling the opening of cash drawers connected to printers
+- Helcim Smart Terminal (Work in progress)
 
 Some features will not work universally on all hardware. Specifics for each of these areas are listed in the following sections. In addition to the above features which will be fleshed out in the sections below, this customization also bypasses the submit dialog to confirm posting the POS invoice.
 
