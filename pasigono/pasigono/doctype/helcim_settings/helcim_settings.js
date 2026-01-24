@@ -1,7 +1,6 @@
 frappe.ui.form.on('Helcim Settings', {
     refresh: function(frm) {
         frm.add_custom_button(__('Ping Device'), async function() {
-            const key = `helcim_settings:device_code`;
             const value = frm.local_only_control.get_value() || '';
             const finalValue = value.trim();
             

@@ -5,6 +5,7 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 		this.prepare_menu();
 		this.make_new_invoice();
 		this.init_stripe_terminal();
+		this.init_helcim_terminal();
 	}
 	
 	init_stripe_terminal(){
@@ -16,6 +17,15 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 			frappe.dom.unfreeze();
 		}
 	}
+	
+	init_helcim_terminal(){
+		if(window.enable_helcim_terminal == 1){
+			this.helcim = new erpnext.PointOfSale.HelcimTerminal();
+			frappe.dom.freeze();
+			this.helcim.assign_stripe_connection_token(this, window.helcim_device_id, true);
+			frappe.dom.unfreeze();
+		}
+	}	
 	
 	init_order_summary() {
 		this.order_summary = new erpnext.PointOfSale.PastOrderSummary({
@@ -147,6 +157,22 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 				this.make_app();
 			}
 		});
+
+		frappe.call({
+			method: "pasigono.pasigono.pos.helcim_settings",
+			callback: (res) => {
+				const device_id_key = `helcim_settings:device_code`;
+        const device_id_value = localStorage.getItem(device_id_key) || '';
+        const finalValue = device_id_value.trim();
+
+				if(res.message.api_key && finalValue) {
+					window.enable_helcim_terminal = 1;
+					window.helcim_device_id = finalValue;
+					window.helcim_mode_of_payment = res.message.mode_of_payment;
+				}
+			}
+		});
+
 		
 		/*frappe.db.get_doc("POS Profile", this.pos_profile).then((profile) => {
 			window.enable_raw_print = profile.enable_raw_printing;
@@ -318,9 +344,9 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 
 				submit_invoice: () => {
 					//Support for stripe payments
+
 					var allowSubmit = 1;
-					if(window.enable_stripe_terminal == 1)
-					{
+					if(window.enable_stripe_terminal == 1) {
 						
 						if(this.frm.doc.payments.length > 0)
 						{
@@ -345,6 +371,32 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 						}
 					}
 
+					if(window.enable_helcim_terminal == 1) {
+						
+						if(this.frm.doc.payments.length > 0)
+						{
+							for (var i=0;i<=this.frm.doc.payments.length;i++) {
+								if(this.frm.doc.payments[i] != undefined){
+									
+									 if(this.frm.doc.payments[i].mode_of_payment == window.helcim_mode_of_payment && this.frm.doc.payments[i].base_amount != 0)
+									 {
+										if(this.frm.doc.payments[i].amount > 0)
+										{
+											allowSubmit = 0;
+										}
+										else if(this.frm.doc.is_return == 1 && this.frm.doc.payments[i].card_payment_intent){
+											allowSubmit = 0;
+										}
+										else if(this.frm.doc.is_return == 1 && !this.frm.doc.payments[i].card_payment_intent){
+											frappe.throw("This transaction was not paid using a Helcim Payment. Please change the return payment method.");
+										}
+									 }
+								}
+							}
+						}
+					}
+
+
 					if (allowSubmit == 1){
 						this.frm.savesubmit()
 							.then((r) => {
@@ -364,11 +416,16 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 								// 	message: __('POS invoice {0} created succesfully', [r.doc.name])
 								// });
 						});
-					}
-					else{
+					} else {
 						//var stripe = new erpnext.PointOfSale.StripeTerminal();
 						//this.stripe.assign_stripe_connection_token(this,true);
-						this.stripe.collecting_payments(this, true);
+						if(window.enable_stripe_terminal == 1) {
+							this.stripe.collecting_payments(this, true);
+						} else if(window.enable_helcim_terminal == 1) {
+							this.helcim.collecting_payments(this, true);
+						} else {
+							// should never get here
+						}
 					}
 				},
 				
@@ -483,7 +540,6 @@ raw_print(frm) {
                 fieldname: ["print_format"]
             },
             callback: function(r) {
-								console.log("jatt 1: ", r.message);
                 const print_format = r.message?.print_format || "POS Invoice - Raw 2";
 
                 frappe.call({
@@ -495,7 +551,6 @@ raw_print(frm) {
                         _lang: frappe.boot.lang || "en"
                     },
                     callback: function(res) {
-												console.log("jatt 23: ", res.message);
                         if (!res.message?.raw_commands) {
                             frappe.msgprint("No raw print commands returned.");
                             return;

@@ -4,14 +4,14 @@
   "module": "Pasigono",
   "custom": 0,
   "fields": [
-    { "fieldname": "invoice", "fieldtype": "Link", "options": "POS Invoice", "reqd": 1 },
-    { "fieldname": "status", "fieldtype": "Select", "options": "Pending\nApproved\nDeclined\nRefunded\nChargeback" },
-    { "fieldname": "amount", "fieldtype": "Currency" },
-    { "fieldname": "device_id", "fieldtype": "Data" },
-    { "fieldname": "helcim_reference", "fieldtype": "Data", "unique": 1 },
-    { "fieldname": "card_last4", "fieldtype": "Data" }
+    { "fieldname": "invoice", "label": "POS Invoice", "fieldtype": "Link", "options": "POS Invoice", "reqd": 1, "in_list_view": 1 },
+    { "fieldname": "status", "label": "status", "fieldtype": "Select", "options": "Pending\nCancelled\nApproved\nDeclined\nRefunded\nChargeback", "in_list_view": 1 },
+    { "fieldname": "amount", "label": "Amount", "fieldtype": "Currency", "in_list_view": 1 },
+    { "fieldname": "device_id", "label": "Helcim Terminal Device ID", "fieldtype": "Data" },
+    { "fieldname": "helcim_reference", "label": "Helcim Reference", "fieldtype": "Data", "unique": 1 },
+    { "fieldname": "card_last4", "label": "Card Last 4 digits", "fieldtype": "Data" }
   ],
   "permissions": [
-    { "role": "System Manager", "read": 1, "write": 1 }
+    { "role": "System Manager", "read": 1, "write": 1, "delete": 1 }
   ]
 }

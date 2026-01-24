@@ -1,4 +1,5 @@
 import "../../custom_scripts/stripe_terminal/stripe_terminal.js";
+import "../../custom_scripts/helcim_terminal/helcim_terminal.js";
 import "../../pos_assets/pos_item_selector.js";
 import "../../pos_assets/pos_item_cart.js";
 import "../../pos_assets/pos_item_details.js";
