@@ -20,11 +20,11 @@ def ping_device(device_id):
         
 
 @frappe.whitelist()
-def start_purchase(invoiceNumber, amount, device_id, currency):
+def start_purchase(pos_invoice_id, amount, device_id, currency):
 
     xx = frappe.get_doc({
         "doctype": "Helcim Transaction",
-        "invoice": invoiceNumber,
+        "invoice": pos_invoice_id,
         "status": "Pending",
         "amount": amount,
         "device_id": device_id,

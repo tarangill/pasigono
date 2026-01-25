@@ -69,7 +69,6 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 		var html = '<div style="min-height:200px;position: relative;text-align: center;padding-top: 75px;line-height: 25px;font-size: 15px;">';
 		html += '<div style="">' + message + '</div>';
 		html += '</div>';
-		console.log("loading_dialog", loading_dialog)
 		loading_dialog.title = title;
 		loading_dialog.fields_dict.show_dialog.$wrapper.html(html);
 		loading_dialog.show();
@@ -159,10 +158,10 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 			method: "pasigono.pasigono.pos.start_purchase",
 			freeze: true,
 			args: {
-				device_id: device_id,
-				"invoiceNumber": payment.frm.doc.name,
-				amount: payment.frm.doc.grand_total,
-				currency: payment.frm.doc.currency
+				"device_id": device_id,
+				"pos_invoice_id": payment.frm.doc.name,
+				"amount": payment.frm.doc.grand_total,
+				"currency": payment.frm.doc.currency
 			},
 			error: function(r) {
 				frappe.dom.unfreeze();
@@ -199,110 +198,65 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 					confirm_dialog.show();
 					frappe.realtime.on(`helcim_payment_${r.message.invoice}`, (data) => {
 						console.log(data);
-							if (data.status === "Cancelled") {
-								frappe.dom.unfreeze();
-								confirm_dialog.hide();
-							} else if (data.status === "approved") {
-									frappe.show_alert("Payment Approved");
-									cur_pos.submit_invoice();
-							} else {
-									frappe.msgprint("Payment Declined");
-							}
+						frappe.dom.unfreeze();
+						if (data.status === "Cancelled") {
+							confirm_dialog.hide();
+						} else if (data.status === "Approved") {
+							capture_payment(payment, is_online, r.message.invoice);
+						} else if (data.status === "Declined") {
+							frappe.msgprint("Payment Declined");
+						} else {
+							console.log("Unknown payment status!")
+						}
 					});
 				}
 			}
 		})
 	}
-	
-	// function cancel_payment(payment, is_online, payment_intent){
-	// 	confirm_dialog.hide();
 		
-	// }
-	
-	
-	function capture_payment(payment, is_online, payment_intent){
+	function capture_payment(payment, is_online, invoiceNumber){
+		console.log("will capture payment for invoiceNumber:", invoiceNumber)
 		confirm_dialog.hide();
-		show_loading_modal('Collecting Payments', 'Please Wait<br>Collecting Payments');
-		frappe.call({
-			method: "pasigono.pasigono.api.capture_payment_intent",
-			freeze: true,
-			args: {
-				"payment_intent_id": payment_intent.id,
-				"sales_invoice_id": payment.frm.doc.name
-			},
-			headers: {
-				"X-Requested-With": "XMLHttpRequest"
-			},
-			callback: function (intent_result) {
-				frappe.dom.unfreeze();
-				loading_dialog.hide();
-				var payments = payment.frm.doc.payments;
-				payments.forEach(function(row){
-					if(row.mode_of_payment == window.stripe_mode_of_payment){
-						var card_info = intent_result.message.charges.data[0].payment_method_details.card_present;
-						row.card_brand = card_info.brand;
-						row.card_last4 = card_info.last4;
-						row.card_account_type = card_info.receipt.account_type;
-						row.card_application_preferred_name = card_info.receipt.application_preferred_name;
-						row.card_dedicated_file_name = card_info.receipt.dedicated_file_name;
-						row.card_authorization_response_code = card_info.receipt.authorization_response_code;
-						row.card_application_cryptogram = card_info.receipt.application_cryptogram;
-						row.card_terminal_verification_results = card_info.receipt.terminal_verification_results;
-						row.card_transaction_status_information = card_info.receipt.transaction_status_information;
-						row.card_authorization_code = card_info.receipt.authorization_code;
-						row.card_charge_id = intent_result.message.charges.data[0].id;
-						row.card_payment_intent = intent_result.message.charges.data[0].payment_intent;
+		var payments = payment.frm.doc.payments;
+		payments.forEach(function(row){
+			if(row.mode_of_payment == window.helcim_mode_of_payment){
+				row.helcim_transaction = invoiceNumber;
+			}
+		});
+
+		if (is_online) {
+			payment.frm.savesubmit()
+				.then((sales_invoice) => {
+					//For raw printing
+					if(window.open_cash_drawer_automatically == 1){
+						payment.payment.events.open_cash_drawer();
+					}
+					
+					if(window.automatically_print == 1){
+						payment.payment.events.raw_print(this.frm);							
+					}
+					
+					if (sales_invoice && sales_invoice.doc) {
+						payment.frm.doc.docstatus = sales_invoice.doc.docstatus;
+						// frappe.show_alert({
+						// 	indicator: 'green',
+						// 	message: __(`POS invoice ${sales_invoice.doc.name} created succesfully`)
+						// });
+						payment.toggle_components(false);
+						payment.order_summary.toggle_component(true);
+						payment.order_summary.load_summary_of(payment.frm.doc, true);
 					}
 				});
-
-				if (is_online) {
-					payment.frm.savesubmit()
-						.then((sales_invoice) => {
-							//For raw printing
-							if(window.open_cash_drawer_automatically == 1){
-								payment.payment.events.open_cash_drawer();
-							}
-							
-							if(window.automatically_print == 1){
-								payment.payment.events.raw_print(this.frm);							
-							}
-							
-							if (sales_invoice && sales_invoice.doc) {
-								payment.frm.doc.docstatus = sales_invoice.doc.docstatus;
-								frappe.show_alert({
-									indicator: 'green',
-									message: __(`POS invoice ${sales_invoice.doc.name} created succesfully`)
-								});
-								frappe.call({
-									method: "pasigono.pasigono.api.update_payment_intent",
-									freeze: true,
-									args: {
-										"payment_intent_id": payment_intent.id,
-										"sales_invoice_id": sales_invoice.doc.name
-									},
-									headers: {
-										"X-Requested-With": "XMLHttpRequest"
-									},
-									callback: function (intent_result) {
-										payment.toggle_components(false);
-										payment.order_summary.toggle_component(true);
-										payment.order_summary.load_summary_of(payment.frm.doc, true);
-									}
-								});
-							}
-						});
-
-				} else {
-					payment.payment.events.submit_invoice();
-				}
-			}
-		})
+		} else {
+			payment.payment.events.submit_invoice();
+		}
 	}
 	
 	function retry_stripe_terminal(me, payment_object, is_online)
 	{
 		me.collecting_payments(payment_object, is_online);
 	}
+
 	function change_payment_method()
 	{
 		$(".num-col.brand-primary").click();
@@ -350,7 +304,6 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 		message_dilaog.show();
 	}
 
-	
 	function show_payment_error_dialog(message) {
 		message_dilaog = new frappe.ui.Dialog({
 			title: 'Message',
