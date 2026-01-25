@@ -14,11 +14,54 @@ def wow():
     data = frappe.request.get_json()
     logger.debug(data)
     if data.get("type") == "terminalCancel":
-        xx = data.get("data").get("invoiceNumber")
+        invoiceNumber = data.get("data").get("invoiceNumber")
+        if invoiceNumber:
+            doc = frappe.get_doc("Helcim Transaction", invoiceNumber)
+            doc.status = "Cancelled"
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            notify_pos(invoiceNumber, 'Cancelled')
+        else:
+            logger.debug(f"Terminal Cancel webhook missing invoiceNumber!!! transactionID: {transID}")
+    elif data.get("type") == "cardTransaction":
+        transID = data.get("id")
+        xx = helcim_get(f"/card-transactions/{transID}").json()
         logger.debug(xx)
-        notify_pos(xx, 'Cancelled')
+        invoiceNumber = xx.get("invoiceNumber")
+        if invoiceNumber:
+            status = xx.get("status")
+            myStatus = ''
+            doc = frappe.get_doc("Helcim Transaction", invoiceNumber)
+            if status == "APPROVED":
+                myStatus = "Approved"
+            elif status == "DECLINED":
+                myStatus = "Declined"
+            else:
+                logger.debug(f"don't know what to do with transaction status: {status}")
+            doc.status = myStatus
+            doc.helim_transactionId = xx.get("transactionId")
+            doc.helim_dateCreated = xx.get("dateCreated ")
+            doc.helim_user = xx.get("user")
+            doc.helim_cardNumber = xx.get("cardNumber")
+            doc.helim_type = xx.get("type")
+            doc.helim_amount = xx.get("amount")
+            doc.helim_currency = xx.get("currency")
+            doc.helim_avsResponse = xx.get("avsResponse")
+            doc.helim_cvvResponse = xx.get("cvvResponse")
+            doc.helim_cardType = xx.get("cardType")
+            doc.helim_approvalCode = xx.get("approvalCode")
+            doc.helim_cardToken = xx.get("cardToken")
+            doc.helim_cardHolderName = xx.get("cardHolderName")
+            doc.helim_customerCode = xx.get("customerCode")
+            doc.helim_warning = xx.get("warning")
+            doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            notify_pos(invoiceNumber, myStatus)
+        else:
+            logger.debug(f"Card Transaction Details missing invoiceNumber!!! transactionID: {transID}")
     else:
-        logger.debug("card transaction")
+        xx = data.get("type")
+        logger.debug(f"Unknown webhook type {xx}")
         
     # logger.debug(frappe.request.headers.get("Content-Type"))
 
