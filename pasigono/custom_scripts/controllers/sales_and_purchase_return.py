@@ -88,7 +88,8 @@ def make_return_doc(doctype, source_name, target_doc=None):
 						'card_transaction_status_information': data.card_transaction_status_information,
 						'card_authorization_code': data.card_authorization_code,
 						'card_charge_id': data.card_charge_id,
-						'card_payment_intent': data.card_payment_intent
+						'card_payment_intent': data.card_payment_intent,
+						'helcim_transaction': data.helcim_transaction
 					})
 				if doc.is_pos:
 					doc.paid_amount = -1 * source.paid_amount

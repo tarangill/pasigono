@@ -77,28 +77,28 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 
 	this.collecting_payments = function(payment, is_online) {
 		if(payment.frm.doc.is_return == 1){
-			// confirm_dialog = new frappe.ui.Dialog({
-			// 	title: 'Confirm, refund through Stripe',
-			// 	fields: [{
-			// 			label: '',
-			// 			fieldname: 'show_dialog',
-			// 			fieldtype: 'HTML'
-			// 		},
-			// 	],
-			// 	primary_action_label: "Confirm",
-			// 	primary_action(values) {
-			// 		confirm_dialog.hide();
-			// 		refund_payment(payment, is_online);
-			// 	},
-			// 	secondary_action_label: "Cancel",
-			// 	secondary_action(values) {
-			// 		confirm_dialog.hide();
-			// 	}
-			// });
-			// var html = '<div style="text-align: center;">Please confirm. Refund of ' + payment.frm.doc.currency.toUpperCase() + ' ';
-			// html += payment.frm.doc.grand_total * -1 + ' through stripe.</div>';
-			// confirm_dialog.fields_dict.show_dialog.$wrapper.html(html);
-			// confirm_dialog.show();
+			confirm_dialog = new frappe.ui.Dialog({
+				title: 'Confirm Refund to Credit Card.',
+				fields: [{
+						label: '',
+						fieldname: 'show_dialog',
+						fieldtype: 'HTML'
+					},
+				],
+				primary_action_label: "Confirm",
+				primary_action(values) {
+					confirm_dialog.hide();
+					refund_payment(payment, is_online);
+				},
+				secondary_action_label: "Cancel",
+				secondary_action(values) {
+					confirm_dialog.hide();
+				}
+			});
+			var html = '<div style="text-align: center;">Please confirm refund of <b>' + payment.frm.doc.currency.toUpperCase() + ' ';
+			html += payment.frm.doc.grand_total * -1 + '</b> to Credit Card (through Helcim).</div>';
+			confirm_dialog.fields_dict.show_dialog.$wrapper.html(html);
+			confirm_dialog.show();
 		}
 		else{
 			create_payment(payment, is_online);
@@ -111,37 +111,75 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 		frappe.dom.freeze();
 		var payments = payment.frm.doc.payments;
 		payments.forEach(function(row){
-			if(row.mode_of_payment == window.stripe_mode_of_payment){
+			if(row.mode_of_payment == window.helcim_mode_of_payment){
 				frappe.call({
-					method: "pasigono.pasigono.api.refund_payment",
+					method: "pasigono.pasigono.pos.start_refund",
 					freeze: true,
 					args: {
-						"payment_intent_id": row.card_payment_intent,
-						"amount": row.base_amount.toFixed(2)*-100
+						"device_id": device_id,
+						"pos_invoice_id": payment.frm.doc.name,
+						"amount": payment.frm.doc.grand_total,
+						"original_transaction": row.helcim_transaction
 					},
-					headers: {
-						"X-Requested-With": "XMLHttpRequest"
-					},
-					callback: function(result){
-						loading_dialog.hide();
-						frappe.dom.unfreeze();
-						if (is_online) {
-							payment.frm.savesubmit()
-								.then((sales_invoice) => {
-									if (sales_invoice && sales_invoice.doc) {
-										payment.frm.doc.docstatus = sales_invoice.doc.docstatus;
-										frappe.show_alert({
-											indicator: 'green',
-											message: __(`POS invoice ${sales_invoice.doc.name} created succesfully`)
-										});
-										payment.toggle_components(false);
-										payment.order_summary.toggle_component(true);
-										payment.order_summary.load_summary_of(payment.frm.doc, true);
-									}
-								});
+					callback: function(r){
 
+						if(!r.message.success) {
+							frappe.dom.unfreeze();
+							console.log("refund error:", r)
+							setTimeout(() => {
+								loading_dialog.hide();
+							}, 300)
+							show_error_dialog('Error contacting Helcim for payment<br />' + r.message.error);
 						} else {
-							payment.payment.events.submit_invoice();
+							console.log("refund response:", r)
+							setTimeout(() => {
+								loading_dialog.hide();
+							}, 300)
+							confirm_dialog = new frappe.ui.Dialog({
+								title: 'Waiting for Customer...',
+								fields: [{
+										label: '',
+										fieldname: 'show_dialog',
+										fieldtype: 'HTML'
+									},
+								]
+							});
+							var html = '<div style="text-align: center;">Waiting for the customer to complete the refund of ' + payment.frm.doc.currency + ' ';
+							html += payment.frm.doc.grand_total + ' through Helcim.</div>';
+							confirm_dialog.fields_dict.show_dialog.$wrapper.html(html);
+							confirm_dialog.show();
+							frappe.realtime.on(`helcim_${payment.frm.doc.name}`, (data) => {
+								console.log(data);
+								frappe.dom.unfreeze();
+								if (data.status === "Cancelled") {
+									confirm_dialog.hide();
+								} else if (data.status === "Approved") {
+									var payments = payment.frm.doc.payments;
+									payments.forEach(function(row){
+										if(row.mode_of_payment == window.helcim_mode_of_payment){
+											row.helcim_transaction = r.message.invoice;
+										}
+									});
+									if (is_online) {
+										payment.frm.savesubmit()
+											.then((sales_invoice) => {
+												if (sales_invoice && sales_invoice.doc) {
+													payment.frm.doc.docstatus = sales_invoice.doc.docstatus;
+													payment.toggle_components(false);
+													payment.order_summary.toggle_component(true);
+													payment.order_summary.load_summary_of(payment.frm.doc, true);
+												}
+											});
+			
+									} else {
+										payment.payment.events.submit_invoice();
+									}
+								} else if (data.status === "Declined") {
+									frappe.msgprint("Payment Declined");
+								} else {
+									console.log("Unknown payment status!")
+								}
+							});
 						}
 					}
 				});
@@ -196,7 +234,7 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 					html += payment.frm.doc.grand_total + ' through Helcim.</div>';
 					confirm_dialog.fields_dict.show_dialog.$wrapper.html(html);
 					confirm_dialog.show();
-					frappe.realtime.on(`helcim_payment_${r.message.invoice}`, (data) => {
+					frappe.realtime.on(`helcim_${payment.frm.doc.name}`, (data) => {
 						console.log(data);
 						frappe.dom.unfreeze();
 						if (data.status === "Cancelled") {

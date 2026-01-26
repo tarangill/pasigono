@@ -380,14 +380,17 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 									
 									 if(this.frm.doc.payments[i].mode_of_payment == window.helcim_mode_of_payment && this.frm.doc.payments[i].base_amount != 0)
 									 {
+
+										console.log("we are dealing with:", this.frm.doc.payments[i]);
+
 										if(this.frm.doc.payments[i].amount > 0)
 										{
 											allowSubmit = 0;
 										}
-										else if(this.frm.doc.is_return == 1 && this.frm.doc.payments[i].card_payment_intent){
+										else if(this.frm.doc.is_return == 1 && this.frm.doc.payments[i].helcim_transaction){
 											allowSubmit = 0;
 										}
-										else if(this.frm.doc.is_return == 1 && !this.frm.doc.payments[i].card_payment_intent){
+										else if(this.frm.doc.is_return == 1 && !this.frm.doc.payments[i].helcim_transaction){
 											frappe.throw("This transaction was not paid using a Helcim Payment. Please change the return payment method.");
 										}
 									 }
