@@ -1,0 +1,16 @@
+{
+  "doctype": "DocType",
+  "name": "Global Payments Settings",
+  "issingle": 1,
+  "module": "Pasigono",
+  "fields": [
+    { "fieldname": "app_id", "label": "APP Id", "fieldtype": "Data", "reqd": 1 },
+    { "fieldname": "app_key", "label": "APP Key", "fieldtype": "Password", "reqd": 1 },
+    { "fieldname": "api_url", "label": "API URL", "fieldtype": "Data", "default": "https://apis.globalpay.com" },
+    { "fieldname": "mode_of_payment", "label": "Helcim Mode of Payment", "fieldtype": "Link", "options": "Mode of Payment" },
+    { "fieldname": "loss_account", "label": "Loss Account", "fieldtype": "Link", "options": "Account" }
+  ],
+  "permissions": [
+    { "role": "System Manager", "read": 1, "write": 1 }
+  ]
+}
