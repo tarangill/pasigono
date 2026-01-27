@@ -9,7 +9,7 @@ frappe.ui.form.on('Helcim Settings', {
                 return ;
             } else {
                 const res = await frappe.call({
-                    method: "pasigono.pasigono.pos.ping_device",
+                    method: "pasigono.helcim.pos.ping_device",
                     args: { device_id: finalValue}
                 });
 

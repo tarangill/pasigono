@@ -24,7 +24,7 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 		show_connection_dialog('Please Wait<br>Connecting to Helcim Terminal');
 		frappe.dom.freeze();
 		frappe.call({
-			method: "pasigono.pasigono.pos.ping_device",
+			method: "pasigono.helcim.pos.ping_device",
 			args: { device_id: device_id},
 			freeze: true,
 			callback: function (r) {
@@ -113,7 +113,7 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 		payments.forEach(function(row){
 			if(row.mode_of_payment == window.helcim_mode_of_payment){
 				frappe.call({
-					method: "pasigono.pasigono.pos.start_refund",
+					method: "pasigono.helcim.pos.start_refund",
 					freeze: true,
 					args: {
 						"device_id": device_id,
@@ -193,7 +193,7 @@ erpnext.PointOfSale.HelcimTerminal = function(){
 
 		frappe.dom.freeze();
 		frappe.call({
-			method: "pasigono.pasigono.pos.start_purchase",
+			method: "pasigono.helcim.pos.start_purchase",
 			freeze: true,
 			args: {
 				"device_id": device_id,

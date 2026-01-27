@@ -1,5 +1,5 @@
 import frappe
-from pasigono.pasigono.helcim_api import helcim_get, helcim_post
+from pasigono.helcim.api import helcim_get, helcim_post
 
 frappe.utils.logger.set_log_level("DEBUG")
 logger = frappe.logger("api", allow_site=True, file_count=50)

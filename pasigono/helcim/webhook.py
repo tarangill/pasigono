@@ -1,14 +1,13 @@
 import frappe
-from pasigono.pasigono.helcim_api import helcim_get
+from pasigono.helcim.api import helcim_get
 
 frappe.utils.logger.set_log_level("DEBUG")
 logger = frappe.logger("api", allow_site=True, file_count=50)
 
-#/api/method/pasigono.pasigono.webhook.helcim
+#/api/method/pasigono.helcim.webhook.wow
 
-#3791cMGu7bOeJc9JdVl09Ndcm4qn5172
+# this will not work, as helcim does not allowe "helcim" in webhook url... so you need to move this somewhere else
 
-# i had to name it wow (as i was in awe) because apparently helcim doesn't allow "helcim" in webhook url.
 @frappe.whitelist(allow_guest=True)
 def wow():
     data = frappe.request.get_json()

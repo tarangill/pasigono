@@ -159,7 +159,7 @@ erpnext.PointOfSale.Controller = class extends erpnext.PointOfSale.Controller{
 		});
 
 		frappe.call({
-			method: "pasigono.pasigono.pos.helcim_settings",
+			method: "pasigono.helcim.pos.helcim_settings",
 			callback: (res) => {
 				const device_id_key = `helcim_settings:device_code`;
         const device_id_value = localStorage.getItem(device_id_key) || '';
