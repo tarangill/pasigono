@@ -71,7 +71,7 @@ def get_api_url():
     ss = settings()
     is_dev = ss.get("is_dev")
 
-    if is_dev: 
+    if is_dev == 1: 
         api_url = ss.get("api_url_dev")
     else:
         api_url = ss.get("api_url")

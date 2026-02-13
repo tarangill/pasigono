@@ -18,7 +18,7 @@ def url():
     is_dev = ss.get("is_dev")
     app_id = ss.get("app_id")
 
-    if is_dev: 
+    if is_dev == 1: 
         auth_url = ss.get("auth_url_dev")
     else:
         auth_url = ss.get("auth_url")
@@ -62,7 +62,7 @@ def callback():
     )
 
     res_json = res.json()
-    # logger.debug(f"status_code: {res.status_code}, res_json: {res_json}")
+    logger.debug(f"status_code: {res.status_code}, res_json: {res_json}")
 
     save_tokens(res_json)
 
