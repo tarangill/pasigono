@@ -1,0 +1,25 @@
+{
+  "doctype": "DocType",
+  "name": "Clover Settings",
+  "issingle": 1,
+  "module": "Pasigono",
+  "fields": [
+    { "fieldname": "is_dev", "label": "Is Development", "fieldtype": "Check" },
+    { "fieldname": "app_id", "label": "APP ID", "fieldtype": "Data", "reqd": 1 },
+    { "fieldname": "app_secret", "label": "APP Secret", "fieldtype": "Password", "reqd": 1 },
+    { "fieldname": "mode_of_payment", "label": "Clover Mode of Payment", "fieldtype": "Link", "options": "Mode of Payment" },
+    { "fieldname": "loss_account", "label": "Loss Account", "fieldtype": "Link", "options": "Account" },
+    { "fieldname": "merchant_id", "label": "merchant_id", "fieldtype": "Data", "read_only": 1 },
+    { "fieldname": "access_token", "label": "access_token", "fieldtype": "Data", "read_only": 1 },
+    { "fieldname": "access_token_expiration", "label": "access_token_expiration", "fieldtype": "Data", "read_only": 1 },
+    { "fieldname": "refresh_token", "label": "refresh_token", "fieldtype": "Data", "read_only": 1 },
+    { "fieldname": "refresh_token_expiration", "label": "refresh_token_expiration", "fieldtype": "Data", "read_only": 1 },
+    { "fieldname": "auth_url_dev", "label": "Auth URL Development", "fieldtype": "Data", "default": "https://sandbox.dev.clover.com" },
+    { "fieldname": "api_url_dev", "label": "API URL Development", "fieldtype": "Data", "default": "https://apisandbox.dev.clover.com" },
+    { "fieldname": "auth_url", "label": "Auth URL", "fieldtype": "Data", "default": "https://www.clover.com" },
+    { "fieldname": "api_url", "label": "API URL", "fieldtype": "Data", "default": "https://api.clover.com" }
+  ],
+  "permissions": [
+    { "role": "System Manager", "read": 1, "write": 1 }
+  ]
+}
